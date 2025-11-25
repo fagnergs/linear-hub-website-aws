@@ -1,6 +1,7 @@
 import { useTranslation } from '@/lib/i18n';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
+import Image from 'next/image';
 
 export default function Clients() {
   const { t } = useTranslation();
@@ -12,22 +13,22 @@ export default function Clients() {
   const clients = [
     {
       name: 'Grupo Equatorial',
-      logo: '/images/clients/equatorial.svg',
+      logo: '/images/clients/equatorial.png',
       url: 'https://www.equatorialenergia.com.br/',
     },
     {
       name: 'Brasil Biofuels',
-      logo: '/images/clients/brasilbiofuels.svg',
+      logo: '/images/clients/brasilbiofuels.png',
       url: 'https://brasilbiofuels.com.br/',
     },
     {
       name: 'Energisa',
-      logo: '/images/clients/energisa.svg',
+      logo: '/images/clients/energisa.png',
       url: 'https://www.energisa.com.br/',
     },
     {
       name: 'JHSF',
-      logo: '/images/clients/jhsf.svg',
+      logo: '/images/clients/jhsf.png',
       url: 'https://www.jhsf.com.br/',
     },
   ];
@@ -65,16 +66,14 @@ export default function Clients() {
               className="group"
             >
               <div className="bg-white rounded-xl p-8 shadow-lg hover:shadow-2xl transition-all hover:-translate-y-2 flex items-center justify-center h-32">
-                {/* Placeholder for client logo */}
-                <div className="text-center">
-                  <div className="w-full h-16 bg-gradient-to-br from-gray-200 to-gray-300 rounded-lg flex items-center justify-center mb-2 group-hover:from-primary-100 group-hover:to-primary-200 transition-colors">
-                    <span className="text-xs font-bold text-gray-600 group-hover:text-primary-700 transition-colors">
-                      LOGO
-                    </span>
-                  </div>
-                  <p className="text-sm font-semibold text-gray-700 group-hover:text-primary-600 transition-colors">
-                    {client.name}
-                  </p>
+                <div className="relative w-full h-20 grayscale group-hover:grayscale-0 transition-all duration-300">
+                  <Image
+                    src={client.logo}
+                    alt={`${client.name} logo`}
+                    fill
+                    className="object-contain filter transition-all"
+                    sizes="(max-width: 768px) 50vw, 25vw"
+                  />
                 </div>
               </div>
             </motion.a>
