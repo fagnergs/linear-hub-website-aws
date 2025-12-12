@@ -1,4 +1,4 @@
-name: Deploy to Firebase Hosting
+name: Build & Test
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
       - main
 
 jobs:
-  build_and_deploy:
+  build:
     runs-on: ubuntu-latest
     
     steps:
@@ -32,28 +32,10 @@ jobs:
       - name: Build Project
         run: npm run build
       
-      - name: Deploy to Firebase Hosting (PR Preview)
-        if: github.event_name == 'pull_request'
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
-          projectId: '${{ secrets.FIREBASE_PROJECT_ID }}'
-          expires: 7d
-      
-      - name: Deploy to Firebase Hosting (Production)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
-          channelId: live
-          projectId: '${{ secrets.FIREBASE_PROJECT_ID }}'
-      
-      - name: Notify Success
+      - name: Build Success
         if: success()
-        run: echo "✅ Deploy completed successfully!"
+        run: echo "✅ Build completed successfully!"
       
-      - name: Notify Failure
+      - name: Build Failed
         if: failure()
-        run: echo "❌ Deploy failed! Check logs for details."
+        run: echo "❌ Build failed! Check logs for details."
