@@ -27,8 +27,8 @@ Você precisará ter:
 
 | Secret Name | Valor |
 |------------|-------|
-| `AWS_ACCESS_KEY_ID` | `AKIA3MAKG254WXDUQLLZ` |
-| `AWS_SECRET_ACCESS_KEY` | `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` |
+| `AWS_ACCESS_KEY_ID` | `<stored-in-github-secrets>` |
+| `AWS_SECRET_ACCESS_KEY` | `<stored-in-github-secrets>` |
 | `AWS_REGION` | `us-east-1` |
 | `S3_BUCKET` | `linear-hub-website-prod-1765543563` |
 | `CLOUDFRONT_DISTRIBUTION_ID` | `EDQZRUQFXIMQ6` |

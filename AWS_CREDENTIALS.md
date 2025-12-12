@@ -54,8 +54,8 @@
 
 | Property | Value |
 |----------|-------|
-| Access Key ID | `AKIA3MAKG254WXDUQLLZ` |
-| Secret Access Key | `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` |
+| Access Key ID | `<stored-in-github-secrets>` |
+| Secret Access Key | `<stored-in-github-secrets>` |
 | Status | ✅ Active |
 | Created | 2025-12-12T12:47:02+00:00 |
 
