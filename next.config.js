@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'export',  // Generate static HTML/CSS/JS for S3 deployment
   trailingSlash: true,
   images: {
     unoptimized: true,
