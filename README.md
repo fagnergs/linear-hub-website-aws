@@ -21,8 +21,8 @@ Website institucional moderno, responsivo e multilíngue para a Linear Hub.
 
 ```bash
 # Clone
-git clone https://github.com/fagnergs/linear-hub-website.git
-cd linear-hub-website
+git clone https://github.com/fagnergs/linear-hub-website-aws.git
+cd linear-hub-website-aws
 
 # Install & Run
 npm install
