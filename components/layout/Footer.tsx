@@ -4,7 +4,7 @@ import { Linkedin, Mail, Phone, MapPin } from 'lucide-react';
 
 export default function Footer() {
   const { t } = useTranslation();
-  const currentYear = new Date().getFullYear();
+  const currentYear = 2026;
 
   const socialLinks = [
     {
