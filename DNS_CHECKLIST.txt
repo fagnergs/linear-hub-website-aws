@@ -1,0 +1,171 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                                                                            ║
+║                    ✅ DNS + GOOGLE CHECKLIST                             ║
+║                                                                            ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+YOUR MISSION (Should you choose to accept it):
+
+Domain:      linear-hub.com.br
+CloudFront:  d1dmp1hz6w68o3.cloudfront.net
+Status:      Site ONLINE ✅
+
+═══════════════════════════════════════════════════════════════════════════
+
+PHASE 1: DNS CONFIGURATION (10 minutes)
+
+[ ] Step 1.1  - Open your domain registrar
+                (Registro.br / GoDaddy / NameCheap / Hostinger)
+
+[ ] Step 1.2  - Navigate to DNS settings
+                (Usually "DNS Management" or "Advanced DNS")
+
+[ ] Step 1.3  - Create CNAME record
+                Host: linear-hub.com.br
+                Type: CNAME (or ALIAS)
+                Value: d1dmp1hz6w68o3.cloudfront.net
+                TTL: 3600 (default is fine)
+
+[ ] Step 1.4  - Save and confirm changes
+                (May take 5-30 minutes to propagate)
+
+═══════════════════════════════════════════════════════════════════════════
+
+PHASE 2: VERIFY PROPAGATION (10 minutes)
+
+[ ] Step 2.1  - Check DNS online
+                Visit: https://www.whatsmydns.net/
+                Search: linear-hub.com.br
+                Type: CNAME
+                Wait for green checkmarks ✅
+
+[ ] Step 2.2  - Test via terminal (optional)
+                Run: nslookup linear-hub.com.br
+                Should show: d1dmp1hz6w68o3.cloudfront.net
+
+[ ] Step 2.3  - Test in browser
+                Visit: https://linear-hub.com.br
+                Should load your site 🎉
+
+═══════════════════════════════════════════════════════════════════════════
+
+PHASE 3: REMOVE FROM GOOGLE (5 minutes)
+
+[ ] Step 3.1  - Open Google Search Console
+                Visit: https://search.google.com/search-console
+
+[ ] Step 3.2  - Request removal of old URLs
+                Menu: "Removals" or "Request Removals"
+                Add: Previous Firebase URL
+                Select: "Include this URL and all subpages"
+                Submit: Request removal
+                (Will be removed for ~6 months)
+
+[ ] Step 3.3  - Remove old property (optional)
+                Settings → Property Settings
+                Scroll to bottom → "Remove property"
+                Confirm deletion
+
+═══════════════════════════════════════════════════════════════════════════
+
+PHASE 4: ADD TO GOOGLE (5 minutes)
+
+[ ] Step 4.1  - Add new property
+                Google Search Console
+                "+ Add Property" or "+ Property"
+                Select: Domain
+                Enter: linear-hub.com.br
+                Click: Continue
+
+[ ] Step 4.2  - Verify via DNS
+                Google will show: google-site-verification=xxxxx
+                Copy this code
+                Go to your registrar
+                Add TXT record:
+                  Type: TXT
+                  Name: linear-hub.com.br (or @)
+                  Value: google-site-verification=xxxxx (FULL CODE)
+                Save
+                Return to Google → Click "Verify"
+                Wait 5-30 minutes
+
+[ ] Step 4.3  - Submit sitemap
+                After verification:
+                → "Sitemaps"
+                → "Add/test sitemap"
+                → https://linear-hub.com.br/sitemap.xml
+                → Submit
+                (Google will start indexing)
+
+═══════════════════════════════════════════════════════════════════════════
+
+PHASE 5: FINAL TESTING (5 minutes)
+
+[ ] Step 5.1  - Verify HTTPS
+                Run: curl -I https://linear-hub.com.br
+                Should show: HTTP/2 200 ✅
+
+[ ] Step 5.2  - Test in browser
+                [ ] Site loads completely
+                [ ] CSS/styles visible
+                [ ] All pages accessible
+                [ ] Images load
+                [ ] Responsive on mobile
+
+[ ] Step 5.3  - Test contact form
+                [ ] Form visible
+                [ ] Can submit message
+                [ ] Email received in inbox
+                [ ] No errors in console
+
+[ ] Step 5.4  - Test multiple languages
+                [ ] Portuguese (PT) works
+                [ ] English (EN) works
+                [ ] Spanish (ES) works
+
+[ ] Step 5.5  - Check Google Console
+                Visit: https://search.google.com/search-console
+                Check: "Coverage" tab
+                Should show: New URLs indexed
+
+═══════════════════════════════════════════════════════════════════════════
+
+ESTIMATED TIMELINE:
+
+NOW:           Start Phase 1 (5-10 min)
++5-30 min:     DNS propagates
++40 min:       Sites loads on linear-hub.com.br ✅
++45 min:       Remove old URLs from Google
++50 min:       Add new domain to Google
++55 min:       Verify with Google
++1 hour:       ✨ DONE! Site fully configured
+
+Then:
++1-7 days:     Google indexes site completely
+
+═══════════════════════════════════════════════════════════════════════════
+
+RESOURCES:
+
+Documentation:   See START_HERE_DNS.md
+Quick Reference: See DNS_QUICK_START.md
+Full Guide:      See DNS_AND_GOOGLE_SETUP.md
+Test Script:     bash test-dns-and-site.sh
+
+═══════════════════════════════════════════════════════════════════════════
+
+CRITICAL VALUES TO REMEMBER:
+
+Domain:        linear-hub.com.br
+CloudFront:    d1dmp1hz6w68o3.cloudfront.net
+S3 Bucket:     linear-hub-website-prod-1765543563
+Lambda:        linear-hub-contact-api
+Region:        us-east-1
+
+═══════════════════════════════════════════════════════════════════════════
+
+You've got this! 💪
+
+One last push and your site is fully in production!
+
+═══════════════════════════════════════════════════════════════════════════
