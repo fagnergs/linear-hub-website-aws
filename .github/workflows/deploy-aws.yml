@@ -49,13 +49,13 @@ jobs:
       # 6. Verify build output
       - name: Verify Build Output
         run: |
-          if [ ! -d ".next" ]; then
-            echo "❌ Build failed: .next directory not found"
+          if [ ! -d "out" ]; then
+            echo "❌ Build failed: out directory not found"
             exit 1
           fi
           echo "✅ Build successful"
           echo "Build contents:"
-          find .next -type f -name "*.html" -o -name "*.js" -o -name "*.css" | head -20
+          find out -type f -name "*.html" -o -name "*.js" -o -name "*.css" | head -20
       
       # 7. Configure AWS credentials
       - name: Configure AWS Credentials
@@ -70,19 +70,17 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           echo "Syncing build to S3: ${{ secrets.S3_BUCKET }}"
-          aws s3 sync .next/static s3://${{ secrets.S3_BUCKET }}/static/ \
+          
+          # Sync all files from out/ directory (Next.js export output)
+          aws s3 sync out/ s3://${{ secrets.S3_BUCKET }}/ \
             --delete \
             --cache-control "max-age=31536000,immutable" \
+            --exclude "*.html" \
             --region ${{ env.AWS_REGION }}
           
-          aws s3 sync .next/public s3://${{ secrets.S3_BUCKET }}/public/ \
-            --delete \
-            --cache-control "max-age=31536000,immutable" \
-            --region ${{ env.AWS_REGION }}
-          
-          # Upload HTML files (not cached)
-          find .next -name "*.html" -type f | while read file; do
-            s3_path="${file#.next/}"
+          # Upload HTML files separately with shorter cache (5 minutes)
+          find out -name "*.html" -type f | while read file; do
+            s3_path="${file#out/}"
             aws s3 cp "$file" "s3://${{ secrets.S3_BUCKET }}/$s3_path" \
               --cache-control "max-age=300,public" \
               --content-type "text/html; charset=utf-8" \
