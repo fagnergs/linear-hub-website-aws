@@ -36,6 +36,8 @@ function sendEmail(payload) {
 }
 
 exports.handler = async (event) => {
+  console.log('Handler called:', JSON.stringify({method: event.httpMethod, hasBody: !!event.body}));
+  
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -44,6 +46,7 @@ exports.handler = async (event) => {
   };
 
   if (event.httpMethod === 'OPTIONS') {
+    console.log('Returning OPTIONS response');
     return { statusCode: 200, headers, body: JSON.stringify({}) };
   }
 
