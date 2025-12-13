@@ -1,6 +1,5 @@
 const https = require('https');
 
-// Resend API configuration
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 
 function sendEmail(payload) {
