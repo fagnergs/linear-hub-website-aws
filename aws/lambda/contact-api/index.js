@@ -44,16 +44,24 @@ exports.handler = async (event) => {
   };
 
   if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '{}' };
+    return { statusCode: 200, headers, body: JSON.stringify({}) };
   }
 
   try {
     let body = {};
     if (event.body) {
-      const bodyStr = event.isBase64Encoded 
-        ? Buffer.from(event.body, 'base64').toString('utf-8')
-        : event.body;
-      body = JSON.parse(bodyStr);
+      try {
+        const bodyStr = event.isBase64Encoded 
+          ? Buffer.from(event.body, 'base64').toString('utf-8')
+          : event.body;
+        body = JSON.parse(bodyStr);
+      } catch (parseError) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ message: 'Invalid JSON in request body' }),
+        };
+      }
     }
 
     const { name, email, subject, message } = body;
