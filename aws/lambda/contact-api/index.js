@@ -8,7 +8,16 @@ console.log('✅ RESEND_API_KEY configured:', !!RESEND_API_KEY);
 
 async function sendEmailViaResend(emailData) {
   return new Promise((resolve, reject) => {
-    const data = JSON.stringify(emailData);
+    // Garantir que os dados são JSON válido
+    let data;
+    try {
+      data = JSON.stringify(emailData);
+    } catch (e) {
+      reject(new Error('Failed to serialize email data: ' + e.message));
+      return;
+    }
+
+    console.log('📤 Sending to Resend, payload size:', data.length, 'bytes');
     
     const options = {
       hostname: 'api.resend.com',
@@ -16,8 +25,8 @@ async function sendEmailViaResend(emailData) {
       path: '/emails',
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': data.length,
+        'Content-Type': 'application/json; charset=utf-8',
+        'Content-Length': Buffer.byteLength(data),
         'Authorization': `Bearer ${RESEND_API_KEY}`
       }
     };
@@ -30,19 +39,25 @@ async function sendEmailViaResend(emailData) {
       });
       
       res.on('end', () => {
+        console.log(`📬 Resend response status: ${res.statusCode}`);
+        
         if (res.statusCode >= 200 && res.statusCode < 300) {
           try {
-            resolve(JSON.parse(responseData));
+            const parsed = JSON.parse(responseData);
+            resolve(parsed);
           } catch (e) {
+            console.warn('Failed to parse Resend response, returning partial data');
             resolve({ id: 'unknown', created_at: new Date().toISOString() });
           }
         } else {
+          console.error(`Resend API error response: ${responseData}`);
           reject(new Error(`Resend API Error (${res.statusCode}): ${responseData}`));
         }
       });
     });
     
     req.on('error', (error) => {
+      console.error('Request error:', error.message);
       reject(error);
     });
     
@@ -55,7 +70,8 @@ exports.handler = async (event) => {
   console.log('📨 Request received:', {
     httpMethod: event.httpMethod,
     path: event.path,
-    body: event.body ? 'present' : 'missing'
+    bodyType: typeof event.body,
+    isBase64: event.isBase64Encoded
   });
 
   // Add CORS headers
@@ -80,10 +96,26 @@ exports.handler = async (event) => {
   }
 
   try {
-    // Parse body
-    const body = event.body ? 
-      (typeof event.body === 'string' ? JSON.parse(event.body) : event.body) 
-      : {};
+    // Parse body - handle various formats
+    let body = {};
+    
+    if (event.body) {
+      if (typeof event.body === 'string') {
+        // Decode base64 if needed
+        let bodyStr = event.body;
+        if (event.isBase64Encoded) {
+          bodyStr = Buffer.from(event.body, 'base64').toString('utf-8');
+        }
+        try {
+          body = JSON.parse(bodyStr);
+        } catch (e) {
+          console.error('Failed to parse body:', bodyStr);
+          throw new Error('Invalid JSON in request body');
+        }
+      } else if (typeof event.body === 'object') {
+        body = event.body;
+      }
+    }
     
     const { name, email, company, subject, message } = body;
     
@@ -177,58 +209,63 @@ exports.handler = async (event) => {
 };
 
 function generateEmailHTML(name, email, company, subject, message) {
-  return `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0; }
-          .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
-          .field { margin-bottom: 20px; }
-          .label { font-weight: bold; color: #667eea; margin-bottom: 5px; }
-          .value { background: white; padding: 12px; border-radius: 4px; border-left: 3px solid #667eea; }
-          .footer { margin-top: 30px; padding-top: 20px; border-top: 2px solid #e5e7eb; font-size: 12px; color: #6b7280; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h2 style="margin: 0;">Nova Mensagem do Site - Linear Hub</h2>
-          </div>
-          <div class="content">
-            <div class="field">
-              <div class="label">Nome:</div>
-              <div class="value">${escapeHtml(name)}</div>
-            </div>
-            <div class="field">
-              <div class="label">Email:</div>
-              <div class="value"><a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a></div>
-            </div>
-            ${company ? `
-            <div class="field">
-              <div class="label">Empresa:</div>
-              <div class="value">${escapeHtml(company)}</div>
-            </div>
-            ` : ''}
-            <div class="field">
-              <div class="label">Assunto:</div>
-              <div class="value">${escapeHtml(subject)}</div>
-            </div>
-            <div class="field">
-              <div class="label">Mensagem:</div>
-              <div class="value">${escapeHtml(message).replace(/\n/g, '<br>')}</div>
-            </div>
-            <div class="footer">
-              <p>Esta mensagem foi enviada através do formulário de contato do site Linear Hub em ${new Date().toLocaleString('pt-BR')}.</p>
-            </div>
-          </div>
+  // Sanitize and escape all inputs
+  const safeName = escapeHtml(name || '');
+  const safeEmail = escapeHtml(email || '');
+  const safeCompany = escapeHtml(company || '');
+  const safeSubject = escapeHtml(subject || '');
+  const safeMessage = escapeHtml(message || '').replace(/\n/g, '<br>');
+
+  return `<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <style>
+      body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+      .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+      .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+      .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
+      .field { margin-bottom: 20px; }
+      .label { font-weight: bold; color: #667eea; margin-bottom: 5px; }
+      .value { background: white; padding: 12px; border-radius: 4px; border-left: 3px solid #667eea; }
+      .footer { margin-top: 30px; padding-top: 20px; border-top: 2px solid #e5e7eb; font-size: 12px; color: #6b7280; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h2 style="margin: 0;">Nova Mensagem do Site - Linear Hub</h2>
+      </div>
+      <div class="content">
+        <div class="field">
+          <div class="label">Nome:</div>
+          <div class="value">${safeName}</div>
         </div>
-      </body>
-    </html>
-  `;
+        <div class="field">
+          <div class="label">Email:</div>
+          <div class="value"><a href="mailto:${safeEmail}">${safeEmail}</a></div>
+        </div>
+        ${company ? `
+        <div class="field">
+          <div class="label">Empresa:</div>
+          <div class="value">${safeCompany}</div>
+        </div>
+        ` : ''}
+        <div class="field">
+          <div class="label">Assunto:</div>
+          <div class="value">${safeSubject}</div>
+        </div>
+        <div class="field">
+          <div class="label">Mensagem:</div>
+          <div class="value">${safeMessage}</div>
+        </div>
+        <div class="footer">
+          <p>Esta mensagem foi enviada através do formulário de contato do site Linear Hub em ${new Date().toLocaleString('pt-BR')}.</p>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>`;
 }
 
 function escapeHtml(text) {
