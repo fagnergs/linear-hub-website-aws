@@ -46,7 +46,8 @@ export default async function handler(
     const RESEND_API_KEY = process.env.RESEND_API_KEY;
 
     if (!RESEND_API_KEY) {
-      console.error('RESEND_API_KEY not configured');
+      console.error('RESEND_API_KEY not configured - Check GitHub Secrets');
+      console.log('Available env vars:', Object.keys(process.env).filter(k => k.includes('RESEND') || k.includes('API')));
 
       // For development/testing: log the form data
       console.log('Contact Form Submission (Email not sent - API key not configured):', {
@@ -62,6 +63,8 @@ export default async function handler(
         message: 'Mensagem recebida com sucesso! (Modo de desenvolvimento - email não enviado)'
       });
     }
+
+    console.log('RESEND_API_KEY is configured, sending email...');
 
     // Send email using Resend
     const response = await fetch('https://api.resend.com/emails', {
@@ -156,7 +159,12 @@ export default async function handler(
     }
 
     const data = await response.json();
-    console.log('Email sent successfully:', data);
+    console.log('Email sent successfully:', {
+      id: data.id,
+      from: data.from,
+      to: data.to,
+      created_at: data.created_at
+    });
 
     return res.status(200).json({
       message: 'Mensagem enviada com sucesso! Entraremos em contato em breve.'
