@@ -123,16 +123,10 @@ jobs:
           cd aws/lambda/contact-api
           zip -r function.zip index.js package.json
           
-          # Update Lambda code
+          # Update Lambda code only (avoid ResourceConflictException)
           aws lambda update-function-code \
             --function-name ${{ secrets.LAMBDA_FUNCTION_NAME }} \
             --zip-file fileb://function.zip \
-            --region ${{ env.AWS_REGION }}
-          
-          # Update Lambda environment variables
-          aws lambda update-function-configuration \
-            --function-name ${{ secrets.LAMBDA_FUNCTION_NAME }} \
-            --environment Variables="{RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}}" \
             --region ${{ env.AWS_REGION }}
           
           echo "✅ Lambda deployment complete"
