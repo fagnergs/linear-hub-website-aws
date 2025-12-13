@@ -40,6 +40,7 @@ export default function Contact() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
+        mode: 'cors',
       });
 
       if (response.ok) {
@@ -47,13 +48,19 @@ export default function Contact() {
         setFormData({ name: '', email: '', subject: '', message: '' });
         setTimeout(() => setSubmitStatus('idle'), 3000);
       } else {
-        const data = await response.json();
-        setSubmitStatus('error');
-        setErrorMessage(data.message || 'Erro ao enviar');
+        try {
+          const data = await response.json();
+          setSubmitStatus('error');
+          setErrorMessage(data.message || `Erro: ${response.status}`);
+        } catch {
+          setSubmitStatus('error');
+          setErrorMessage(`Erro ao enviar (HTTP ${response.status})`);
+        }
       }
-    } catch {
+    } catch (error) {
+      console.error('Erro no fetch:', error);
       setSubmitStatus('error');
-      setErrorMessage('Falha na conexão. Tente novamente.');
+      setErrorMessage('Falha na conexão. Verifique sua internet e tente novamente.');
     } finally {
       setIsSubmitting(false);
     }
