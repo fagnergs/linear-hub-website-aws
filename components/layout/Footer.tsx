@@ -106,7 +106,7 @@ export default function Footer() {
               <li className="flex items-center space-x-3 text-gray-400 text-sm">
                 <Mail className="w-5 h-5 flex-shrink-0 text-primary-500" />
                 <a
-                  href="mailto:Fagner.Silva@linear-hub.com.br"
+                  href="mailto:contato@linear-hub.com.br"
                   className="hover:text-white transition-colors break-all"
                 >
                   {t('contact.info.email')}

@@ -95,7 +95,7 @@ export default function Contact() {
       icon: Mail,
       label: 'E-mail',
       value: t('contact.info.email'),
-      link: 'mailto:Fagner.Silva@linear-hub.com.br',
+      link: 'mailto:contato@linear-hub.com.br',
     },
   ];
 
