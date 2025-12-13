@@ -1,72 +1,228 @@
+const https = require('https');
+
+// Environment variable for Resend API key
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const RESEND_FROM = 'noreply@linear-hub.com.br';
-const CONTACT_EMAIL = 'contato@linear-hub.com.br';
+
+console.log('🚀 Lambda initialized');
+console.log('✅ RESEND_API_KEY configured:', !!RESEND_API_KEY);
 
 async function sendEmailViaResend(emailData) {
-  try {
-    const response = await fetch('https://api.resend.com/emails', {
+  return new Promise((resolve, reject) => {
+    const data = JSON.stringify(emailData);
+    
+    const options = {
+      hostname: 'api.resend.com',
+      port: 443,
+      path: '/emails',
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
         'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(emailData),
+        'Content-Length': data.length,
+        'Authorization': `Bearer ${RESEND_API_KEY}`
+      }
+    };
+    
+    const req = https.request(options, (res) => {
+      let responseData = '';
+      
+      res.on('data', (chunk) => {
+        responseData += chunk;
+      });
+      
+      res.on('end', () => {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          try {
+            resolve(JSON.parse(responseData));
+          } catch (e) {
+            resolve({ id: 'unknown', created_at: new Date().toISOString() });
+          }
+        } else {
+          reject(new Error(`Resend API Error (${res.statusCode}): ${responseData}`));
+        }
+      });
     });
-
-    const responseData = await response.json();
-
-    if (!response.ok) {
-      throw new Error(`Resend API (${response.status}): ${JSON.stringify(responseData)}`);
-    }
-
-    return responseData;
-  } catch (error) {
-    throw error;
-  }
+    
+    req.on('error', (error) => {
+      reject(error);
+    });
+    
+    req.write(data);
+    req.end();
+  });
 }
 
-function buildEmailHTML(name, email, company, subject, message) {
+exports.handler = async (event) => {
+  console.log('📨 Request received:', {
+    httpMethod: event.httpMethod,
+    path: event.path,
+    body: event.body ? 'present' : 'missing'
+  });
+
+  // Add CORS headers
+  const headers = {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  };
+
+  // Handle OPTIONS request
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 200, headers, body: '{}' };
+  }
+
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      headers,
+      body: JSON.stringify({ message: 'Method not allowed' })
+    };
+  }
+
+  try {
+    // Parse body
+    const body = event.body ? 
+      (typeof event.body === 'string' ? JSON.parse(event.body) : event.body) 
+      : {};
+    
+    const { name, email, company, subject, message } = body;
+    
+    console.log('📝 Form data:', { name, email, company, subject, message: message ? 'present' : 'missing' });
+
+    // Validate required fields
+    if (!name || !email || !subject || !message) {
+      console.warn('❌ Missing required fields');
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({
+          message: 'Todos os campos obrigatórios devem ser preenchidos (nome, email, assunto, mensagem)',
+          error: 'Missing required fields'
+        })
+      };
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      console.warn('❌ Invalid email format:', email);
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({
+          message: 'Email inválido',
+          error: 'Invalid email format'
+        })
+      };
+    }
+
+    // Check if API key is configured
+    if (!RESEND_API_KEY) {
+      console.error('❌ RESEND_API_KEY not configured');
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({
+          message: 'Erro ao enviar mensagem. Chave API não configurada.',
+          error: 'RESEND_API_KEY not set'
+        })
+      };
+    }
+
+    console.log('📧 Preparing email...');
+
+    // Send email via Resend
+    const emailPayload = {
+      from: 'Linear Hub <noreply@linear-hub.com.br>',
+      to: ['contato@linear-hub.com.br'],
+      reply_to: email,
+      subject: `[Website] ${subject}`,
+      html: generateEmailHTML(name, email, company, subject, message)
+    };
+
+    console.log('🔄 Sending to Resend API...');
+    const result = await sendEmailViaResend(emailPayload);
+
+    console.log('✅ Email sent successfully:', {
+      id: result.id,
+      from: result.from || 'noreply@linear-hub.com.br',
+      created_at: result.created_at
+    });
+
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({
+        message: 'Mensagem enviada com sucesso! Entraremos em contato em breve.',
+        id: result.id
+      })
+    };
+
+  } catch (error) {
+    console.error('❌ Lambda Error:', {
+      message: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString()
+    });
+
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({
+        message: 'Erro ao enviar mensagem. Por favor, tente novamente mais tarde.',
+        error: error.message
+      })
+    };
+  }
+};
+
+function generateEmailHTML(name, email, company, subject, message) {
   return `
     <!DOCTYPE html>
     <html>
       <head>
         <meta charset="utf-8">
         <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 0; }
-          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }
-          .content { background: #f9fafb; padding: 30px; }
-          .field { margin-bottom: 20px; background: white; padding: 15px; border-radius: 4px; border-left: 4px solid #667eea; }
-          .label { font-weight: 700; color: #667eea; margin-bottom: 8px; font-size: 13px; }
-          .value { color: #333; word-break: break-word; }
-          .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280; }
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+          .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
+          .field { margin-bottom: 20px; }
+          .label { font-weight: bold; color: #667eea; margin-bottom: 5px; }
+          .value { background: white; padding: 12px; border-radius: 4px; border-left: 3px solid #667eea; }
+          .footer { margin-top: 30px; padding-top: 20px; border-top: 2px solid #e5e7eb; font-size: 12px; color: #6b7280; }
         </style>
       </head>
       <body>
         <div class="container">
           <div class="header">
-            <h2 style="margin: 0;">Mensagem do Formulário de Contato</h2>
+            <h2 style="margin: 0;">Nova Mensagem do Site - Linear Hub</h2>
           </div>
           <div class="content">
             <div class="field">
-              <div class="label">NOME</div>
-              <div class="value">${name}</div>
+              <div class="label">Nome:</div>
+              <div class="value">${escapeHtml(name)}</div>
             </div>
             <div class="field">
-              <div class="label">EMAIL</div>
-              <div class="value">${email}</div>
+              <div class="label">Email:</div>
+              <div class="value"><a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a></div>
             </div>
-            ${company ? `<div class="field"><div class="label">EMPRESA</div><div class="value">${company}</div></div>` : ''}
+            ${company ? `
             <div class="field">
-              <div class="label">ASSUNTO</div>
-              <div class="value">${subject}</div>
+              <div class="label">Empresa:</div>
+              <div class="value">${escapeHtml(company)}</div>
+            </div>
+            ` : ''}
+            <div class="field">
+              <div class="label">Assunto:</div>
+              <div class="value">${escapeHtml(subject)}</div>
             </div>
             <div class="field">
-              <div class="label">MENSAGEM</div>
-              <div class="value">${message.replace(/\n/g, '<br>')}</div>
+              <div class="label">Mensagem:</div>
+              <div class="value">${escapeHtml(message).replace(/\n/g, '<br>')}</div>
             </div>
             <div class="footer">
-              <p>Enviado em ${new Date().toLocaleString('pt-BR')}</p>
+              <p>Esta mensagem foi enviada através do formulário de contato do site Linear Hub em ${new Date().toLocaleString('pt-BR')}.</p>
             </div>
           </div>
         </div>
@@ -75,105 +231,14 @@ function buildEmailHTML(name, email, company, subject, message) {
   `;
 }
 
-exports.handler = async (event) => {
-  console.log('📧 Contact API called:', { method: event.httpMethod });
-
-  // Handle CORS
-  if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
-      body: '',
-    };
-  }
-
-  if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ message: 'Method not allowed' }),
-    };
-  }
-
-  try {
-    const body = JSON.parse(event.body || '{}');
-    const { name, email, company, subject, message } = body;
-    
-    console.log('📝 Form data:', { name, email, subject: subject?.substring(0, 50) });
-
-    // Validate
-    if (!name || !email || !subject || !message) {
-      return {
-        statusCode: 400,
-        headers: { 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({
-          message: 'Preencha todos os campos obrigatórios',
-        })
-      };
-    }
-
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return {
-        statusCode: 400,
-        headers: { 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({
-          message: 'Email inválido',
-        })
-      };
-    }
-
-    if (!RESEND_API_KEY) {
-      console.error('❌ RESEND_API_KEY not set');
-      return {
-        statusCode: 500,
-        headers: { 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({
-          message: 'Erro: API não configurada',
-        })
-      };
-    }
-
-    console.log('📤 Sending via Resend...');
-
-    const result = await sendEmailViaResend({
-      from: RESEND_FROM,
-      to: [CONTACT_EMAIL],
-      reply_to: email,
-      subject: `[Website] ${subject}`,
-      html: buildEmailHTML(name, email, company, subject, message),
-    });
-
-    console.log('✅ Email sent:', result.id);
-
-    return {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      },
-      body: JSON.stringify({
-        message: 'Mensagem enviada com sucesso! Entraremos em contato em breve.',
-        id: result.id,
-      })
-    };
-
-  } catch (error) {
-    console.error('❌ Error:', error.message);
-    
-    return {
-      statusCode: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      },
-      body: JSON.stringify({
-        message: 'Erro ao enviar mensagem. Tente novamente.',
-        error: error.message,
-      })
-    };
-  }
-};
+function escapeHtml(text) {
+  if (!text) return '';
+  const map = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  };
+  return text.replace(/[&<>"']/g, m => map[m]);
+}

@@ -31,9 +31,33 @@ export default function Contact() {
     setSubmitStatus({ type: null, message: '' });
 
     try {
+      // Validar campos obrigatórios
+      if (!formData.name || !formData.email || !formData.subject || !formData.message) {
+        setSubmitStatus({
+          type: 'error',
+          message: 'Por favor, preencha todos os campos obrigatórios',
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Validar email
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        setSubmitStatus({
+          type: 'error',
+          message: 'Por favor, insira um email válido',
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
       // Use API Gateway endpoint for Lambda function
       const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT || 'https://xsp6ymu9u6.execute-api.us-east-1.amazonaws.com/prod/contact';
       
+      console.log('📧 Enviando para:', apiEndpoint);
+      console.log('📋 Dados:', formData);
+
       const response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: {
@@ -42,13 +66,17 @@ export default function Contact() {
         body: JSON.stringify(formData),
       });
 
+      console.log('✅ Status:', response.status);
+
       const data = await response.json();
+      console.log('📦 Resposta:', data);
 
       if (response.ok) {
         setSubmitStatus({
           type: 'success',
-          message: data.message,
+          message: data.message || 'Mensagem enviada com sucesso!',
         });
+        // Limpar formulário
         setFormData({
           name: '',
           email: '',
@@ -56,16 +84,22 @@ export default function Contact() {
           subject: '',
           message: '',
         });
+        // Remover mensagem de sucesso após 5 segundos
+        setTimeout(() => {
+          setSubmitStatus({ type: null, message: '' });
+        }, 5000);
       } else {
         setSubmitStatus({
           type: 'error',
-          message: data.message || 'Erro ao enviar mensagem. Tente novamente.',
+          message: data.message || data.error || 'Erro ao enviar mensagem. Tente novamente.',
         });
       }
     } catch (error) {
+      console.error('❌ Erro:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       setSubmitStatus({
         type: 'error',
-        message: 'Erro ao enviar mensagem. Verifique sua conexão e tente novamente.',
+        message: `Erro ao enviar: ${errorMessage}`,
       });
     } finally {
       setIsSubmitting(false);
