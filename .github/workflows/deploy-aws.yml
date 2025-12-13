@@ -45,6 +45,7 @@ jobs:
         run: npm run build
         env:
           NODE_ENV: production
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
       
       # 6. Verify build output
       - name: Verify Build Output
