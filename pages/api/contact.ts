@@ -137,8 +137,22 @@ export default async function handler(
 
     if (!response.ok) {
       const error = await response.text();
-      console.error('Resend API error:', error);
-      throw new Error('Failed to send email');
+      console.error('Resend API error:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: error
+      });
+      
+      // Parse error message if JSON
+      let errorMessage = 'Failed to send email';
+      try {
+        const errorJson = JSON.parse(error);
+        errorMessage = errorJson.message || error;
+      } catch {
+        errorMessage = error;
+      }
+      
+      throw new Error(`Resend API Error (${response.status}): ${errorMessage}`);
     }
 
     const data = await response.json();
@@ -149,10 +163,16 @@ export default async function handler(
     });
 
   } catch (error) {
-    console.error('Error sending email:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('Contact API Error:', {
+      message: errorMessage,
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString()
+    });
+    
     return res.status(500).json({
       message: 'Erro ao enviar mensagem. Por favor, tente novamente mais tarde.',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: errorMessage
     });
   }
 }
