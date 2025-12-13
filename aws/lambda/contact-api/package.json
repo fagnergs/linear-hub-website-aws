@@ -1,0 +1,7 @@
+{
+  "name": "linear-hub-contact-api",
+  "version": "1.0.0",
+  "description": "Contact form API for Linear Hub website",
+  "main": "index.js",
+  "runtime": "nodejs20.x"
+}

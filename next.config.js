@@ -14,8 +14,7 @@ const nextConfig = {
   
   // Environment variables
   env: {
-    NEXT_PUBLIC_API_ENDPOINT: process.env.NEXT_PUBLIC_API_ENDPOINT || '/api/contact',
-    RESEND_API_KEY: process.env.RESEND_API_KEY,
+    NEXT_PUBLIC_API_ENDPOINT: process.env.NEXT_PUBLIC_API_ENDPOINT || 'https://xsp6ymu9u6.execute-api.us-east-1.amazonaws.com/prod/contact',
   },
 }
 

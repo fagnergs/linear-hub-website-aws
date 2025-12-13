@@ -31,7 +31,10 @@ export default function Contact() {
     setSubmitStatus({ type: null, message: '' });
 
     try {
-      const response = await fetch('/api/contact', {
+      // Use API Gateway endpoint for Lambda function
+      const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT || 'https://xsp6ymu9u6.execute-api.us-east-1.amazonaws.com/prod/contact';
+      
+      const response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

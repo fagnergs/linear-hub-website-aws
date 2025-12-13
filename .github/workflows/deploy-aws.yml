@@ -120,13 +120,19 @@ jobs:
           echo "Deploying Lambda function: ${{ secrets.LAMBDA_FUNCTION_NAME }}"
           
           # Create deployment package
-          cd aws/lambda
-          zip -r function.zip index.js node_modules/
+          cd aws/lambda/contact-api
+          zip -r function.zip index.js package.json
           
           # Update Lambda code
           aws lambda update-function-code \
             --function-name ${{ secrets.LAMBDA_FUNCTION_NAME }} \
             --zip-file fileb://function.zip \
+            --region ${{ env.AWS_REGION }}
+          
+          # Update Lambda environment variables
+          aws lambda update-function-configuration \
+            --function-name ${{ secrets.LAMBDA_FUNCTION_NAME }} \
+            --environment Variables="{RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}}" \
             --region ${{ env.AWS_REGION }}
           
           echo "✅ Lambda deployment complete"
