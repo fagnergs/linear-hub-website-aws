@@ -36,29 +36,45 @@ export default function Contact() {
         return;
       }
 
-      const response = await fetch('https://xsp6ymu9u6.execute-api.us-east-1.amazonaws.com/prod/contact', {
+      const apiUrl = 'https://xsp6ymu9u6.execute-api.us-east-1.amazonaws.com/prod/contact';
+      
+      console.log('Iniciando envio para:', apiUrl);
+      console.log('Dados:', formData);
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        credentials: 'omit',
         body: JSON.stringify(formData),
-        mode: 'cors',
       });
 
+      console.log('Resposta status:', response.status);
+
       if (response.ok) {
+        const data = await response.json();
+        console.log('Sucesso:', data);
         setSubmitStatus('success');
         setFormData({ name: '', email: '', subject: '', message: '' });
-        setTimeout(() => setSubmitStatus('idle'), 3000);
+        setTimeout(() => setSubmitStatus('idle'), 5000);
       } else {
         try {
           const data = await response.json();
+          console.error('Erro de resposta:', data);
           setSubmitStatus('error');
           setErrorMessage(data.message || `Erro: ${response.status}`);
-        } catch {
+        } catch (parseError) {
+          console.error('Erro ao parsear resposta:', parseError);
           setSubmitStatus('error');
           setErrorMessage(`Erro ao enviar (HTTP ${response.status})`);
         }
       }
     } catch (error) {
-      console.error('Erro no fetch:', error);
+      console.error('Erro na requisição:', error);
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      console.error('Detalhes:', errorMsg);
       setSubmitStatus('error');
       setErrorMessage('Falha na conexão. Verifique sua internet e tente novamente.');
     } finally {
