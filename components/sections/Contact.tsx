@@ -39,15 +39,12 @@ export default function Contact() {
       const apiUrl = 'https://xsp6ymu9u6.execute-api.us-east-1.amazonaws.com/prod/contact';
       
       console.log('Iniciando envio para:', apiUrl);
-      console.log('Dados:', formData);
 
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
         },
-        credentials: 'omit',
         body: JSON.stringify(formData),
       });
 
