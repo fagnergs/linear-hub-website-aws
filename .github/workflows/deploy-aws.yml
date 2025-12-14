@@ -136,7 +136,7 @@ jobs:
                     },
                     {
                       "type": "mrkdwn",
-                      "text": "*Commit:*\n`${{ github.sha | slice: 0:8 }}`"
+                      "text": "*Commit:*\n`${{ github.sha | substring(0, 8) }}`"
                     },
                     {
                       "type": "mrkdwn",
@@ -190,7 +190,7 @@ jobs:
                     },
                     {
                       "type": "mrkdwn",
-                      "text": "*Commit:*\n`${{ github.sha | slice: 0:8 }}`"
+                      "text": "*Commit:*\n`${{ github.sha | substring(0, 8) }}`"
                     },
                     {
                       "type": "mrkdwn",
