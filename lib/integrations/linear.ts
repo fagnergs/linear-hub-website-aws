@@ -46,7 +46,7 @@ export async function createLinearTask(
       mutation {
         issueCreate(
           input: {
-            teamId: "team-1"
+            teamId: "LWS"
             title: "${escapeGraphQL(title)}"
             description: "${escapeGraphQL(description)}\n\nContato: ${email}"
             priority: 3
@@ -137,7 +137,7 @@ Deployment falhou no branch **${deployment.branch}**
       mutation {
         issueCreate(
           input: {
-            teamId: "team-1"
+            teamId: "LWS"
             title: "${escapeGraphQL(title)}"
             description: "${escapeGraphQL(description)}"
             priority: 4
