@@ -437,7 +437,7 @@ async function addContactToNotion(apiKey, databaseId, contact) {
         console.log('Notion: Response data:', data.substring(0, 300));
         try {
           const response = JSON.parse(data);
-          if (res.statusCode === 200) {
+          if (res.statusCode === 200 || res.statusCode === 201) {
             console.log('Notion: ✅ Success! Page ID:', response.id);
             resolve({ success: true, id: response.id });
           } else {
