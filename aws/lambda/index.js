@@ -167,7 +167,11 @@ exports.handler = async (event) => {
       const notionApiKey = process.env.NOTION_API_KEY;
       const notionDatabaseId = process.env.NOTION_CONTACTS_DATABASE_ID;
       if (notionApiKey && notionDatabaseId) {
-        await addContactToNotion(notionApiKey, notionDatabaseId, { name, email, company, subject, message });
+        console.log('Notion: API key found, database ID found');
+        const notionResult = await addContactToNotion(notionApiKey, notionDatabaseId, { name, email, company, subject, message });
+        console.log('Notion: Result:', notionResult);
+      } else {
+        console.warn('Notion: Missing credentials - API key:', !!notionApiKey, 'DB ID:', !!notionDatabaseId);
       }
     } catch (error) {
       console.error('Notion logging failed (non-blocking):', error);
@@ -177,7 +181,11 @@ exports.handler = async (event) => {
     try {
       const linearApiKey = process.env.LINEAR_API_KEY;
       if (linearApiKey) {
-        await createLinearTask(linearApiKey, subject, message, email);
+        console.log('Linear: API key found, creating task...');
+        const linearResult = await createLinearTask(linearApiKey, subject, message, email);
+        console.log('Linear: Result:', linearResult);
+      } else {
+        console.warn('Linear: API key not configured');
       }
     } catch (error) {
       console.error('Linear task creation failed (non-blocking):', error);
@@ -367,6 +375,7 @@ async function sendSlackNotification(webhookUrl, contact) {
 
 // Helper: Add contact to Notion
 async function addContactToNotion(apiKey, databaseId, contact) {
+  console.log('Notion: Starting addContactToNotion...');
   const payload = JSON.stringify({
     parent: { database_id: databaseId },
     properties: {
@@ -395,12 +404,13 @@ async function addContactToNotion(apiKey, databaseId, contact) {
   });
 
   return new Promise((resolve, reject) => {
+    console.log('Notion: Creating request to api.notion.com...');
     const options = {
       hostname: 'api.notion.com',
       path: '/v1/pages',
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        'Authorization': `Bearer ${apiKey.substring(0, 20)}...`,
         'Content-Type': 'application/json',
         'Notion-Version': '2022-06-28',
         'Content-Length': Buffer.byteLength(payload),
@@ -408,11 +418,13 @@ async function addContactToNotion(apiKey, databaseId, contact) {
     };
 
     const req = https.request(options, (res) => {
+      console.log('Notion: Response status:', res.statusCode);
       let data = '';
       res.on('data', (chunk) => {
         data += chunk;
       });
       res.on('end', () => {
+        console.log('Notion: Response data:', data.substring(0, 200));
         try {
           const response = JSON.parse(data);
           if (res.statusCode === 200) {
@@ -434,6 +446,7 @@ async function addContactToNotion(apiKey, databaseId, contact) {
 
 // Helper: Create Linear task
 async function createLinearTask(apiKey, title, description, email) {
+  console.log('Linear: Starting createLinearTask...');
   const escapedTitle = title.replace(/"/g, '\\"').replace(/\n/g, '\\n');
   const escapedDescription = description.replace(/"/g, '\\"').replace(/\n/g, '\\n');
 
@@ -459,37 +472,47 @@ async function createLinearTask(apiKey, title, description, email) {
   const payload = JSON.stringify({ query });
 
   return new Promise((resolve, reject) => {
+    console.log('Linear: Creating request to api.linear.app...');
     const options = {
       hostname: 'api.linear.app',
       path: '/graphql',
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        'Authorization': `Bearer ${apiKey.substring(0, 20)}...`,
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(payload),
       },
     };
 
     const req = https.request(options, (res) => {
+      console.log('Linear: Response status:', res.statusCode);
       let data = '';
       res.on('data', (chunk) => {
         data += chunk;
       });
       res.on('end', () => {
+        console.log('Linear: Response data:', data.substring(0, 200));
         try {
           const response = JSON.parse(data);
           if (response.data?.issueCreate?.success) {
+            console.log('Linear: ✅ Task created successfully');
             resolve({ success: true, id: response.data.issueCreate.issue.id });
           } else {
+            console.error('Linear: ❌ GraphQL error:', response.errors || response);
             resolve({ success: false, error: response.errors || response });
           }
         } catch (e) {
+          console.error('Linear: Parse error:', e);
           resolve({ success: false, error: data });
         }
       });
     });
 
-    req.on('error', reject);
+    req.on('error', (err) => {
+      console.error('Linear: Request error:', err);
+      reject(err);
+    });
+    
     req.write(payload);
     req.end();
   });
