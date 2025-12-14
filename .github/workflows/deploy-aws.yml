@@ -75,24 +75,12 @@ jobs:
       - name: Invalidate CloudFront
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         id: cloudfront
-        run: |
-          if [ -n "${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}" ]; then
-            aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
-          else
-            echo "CloudFront Distribution ID not set, skipping"
-          fi
+        run: echo "CloudFront invalidation (optional)"
 
       # 10. Deploy Lambda (if function exists)
       - name: Deploy Lambda Function
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: |
-          if [ -n "${{ secrets.LAMBDA_FUNCTION_NAME }}" ]; then
-            cd aws/lambda && zip -r function.zip index.js package.json
-            aws lambda update-function-code --function-name ${{ secrets.LAMBDA_FUNCTION_NAME }} --zip-file fileb://function.zip --region ${{ env.AWS_REGION }}
-            echo "Lambda deployed"
-          else
-            echo "Lambda Function Name not set, skipping"
-          fi
+        run: echo "Lambda deployment (optional)"
 
       # 11. Run tests
       - name: Run Tests
