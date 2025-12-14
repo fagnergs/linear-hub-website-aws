@@ -10,11 +10,28 @@ const CONTACT_EMAIL = 'contato@linear-hub.com.br';
 exports.handler = async (event) => {
   console.log('Received event:', JSON.stringify(event, null, 2));
 
+  // CORS headers for all responses
+  const corsHeaders = {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  };
+
+  // Handle OPTIONS preflight request
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: corsHeaders,
+      body: JSON.stringify({ message: 'OK' }),
+    };
+  }
+
   // Only allow POST
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
-      headers: { 'Content-Type': 'application/json' },
+      headers: corsHeaders,
       body: JSON.stringify({ error: 'Method Not Allowed' }),
     };
   }
@@ -34,7 +51,7 @@ exports.handler = async (event) => {
     if (!name || !email || !subject || !message) {
       return {
         statusCode: 400,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify({
           error: 'Missing required fields: name, email, subject, message',
         }),
@@ -46,7 +63,7 @@ exports.handler = async (event) => {
     if (!emailRegex.test(email)) {
       return {
         statusCode: 400,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify({ error: 'Invalid email format' }),
       };
     }
@@ -124,7 +141,7 @@ exports.handler = async (event) => {
       console.error('Resend API error:', emailResponse.error);
       return {
         statusCode: 500,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify({ error: 'Failed to send email' }),
       };
     }
@@ -164,10 +181,7 @@ exports.handler = async (event) => {
 
     return {
       statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      },
+      headers: corsHeaders,
       body: JSON.stringify({
         message: 'Email enviado com sucesso! Entraremos em contato em breve.',
         id: emailResponse.id,
@@ -178,7 +192,7 @@ exports.handler = async (event) => {
     console.error('Error:', error);
     return {
       statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: corsHeaders,
       body: JSON.stringify({ error: 'Internal server error' }),
     };
   }
