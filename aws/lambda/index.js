@@ -131,6 +131,37 @@ exports.handler = async (event) => {
 
     console.log('Email sent successfully:', emailResponse.id);
 
+    // Send to Slack (non-blocking)
+    try {
+      const slackWebhookUrl = process.env.SLACK_WEBHOOK_URL;
+      if (slackWebhookUrl) {
+        await sendSlackNotification(slackWebhookUrl, { name, email, company, subject, message });
+      }
+    } catch (error) {
+      console.error('Slack notification failed (non-blocking):', error);
+    }
+
+    // Add to Notion (non-blocking)
+    try {
+      const notionApiKey = process.env.NOTION_API_KEY;
+      const notionDatabaseId = process.env.NOTION_CONTACTS_DATABASE_ID;
+      if (notionApiKey && notionDatabaseId) {
+        await addContactToNotion(notionApiKey, notionDatabaseId, { name, email, company, subject, message });
+      }
+    } catch (error) {
+      console.error('Notion logging failed (non-blocking):', error);
+    }
+
+    // Create Linear task (non-blocking)
+    try {
+      const linearApiKey = process.env.LINEAR_API_KEY;
+      if (linearApiKey) {
+        await createLinearTask(linearApiKey, subject, message, email);
+      }
+    } catch (error) {
+      console.error('Linear task creation failed (non-blocking):', error);
+    }
+
     return {
       statusCode: 200,
       headers: {
@@ -208,4 +239,228 @@ function escapeHtml(unsafe) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+// ============================================
+// INTEGRATIONS: Slack, Notion, Linear
+// ============================================
+
+// Helper: Send Slack notification
+async function sendSlackNotification(webhookUrl, contact) {
+  const payload = {
+    channel: '#contacts',
+    blocks: [
+      {
+        type: 'header',
+        text: {
+          type: 'plain_text',
+          text: '📬 Novo Contato - Website Linear Hub',
+          emoji: true,
+        },
+      },
+      {
+        type: 'section',
+        fields: [
+          {
+            type: 'mrkdwn',
+            text: `*Nome:*\n${contact.name}`,
+          },
+          {
+            type: 'mrkdwn',
+            text: `*Email:*\n<mailto:${contact.email}|${contact.email}>`,
+          },
+          {
+            type: 'mrkdwn',
+            text: `*Assunto:*\n${contact.subject}`,
+          },
+          {
+            type: 'mrkdwn',
+            text: `*Empresa:*\n${contact.company || 'Não informado'}`,
+          },
+        ],
+      },
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `*Mensagem:*\n${contact.message.substring(0, 500)}${contact.message.length > 500 ? '...' : ''}`,
+        },
+      },
+      {
+        type: 'divider',
+      },
+      {
+        type: 'context',
+        elements: [
+          {
+            type: 'mrkdwn',
+            text: `_Recebido em: ${new Date().toLocaleString('pt-BR')}_`,
+          },
+        ],
+      },
+    ],
+  };
+
+  return new Promise((resolve, reject) => {
+    const payload_str = JSON.stringify(payload);
+    const url = new URL(webhookUrl);
+
+    const options = {
+      hostname: url.hostname,
+      path: url.pathname + url.search,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload_str),
+      },
+    };
+
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+      res.on('end', () => {
+        if (res.statusCode === 200) {
+          resolve({ success: true });
+        } else {
+          resolve({ success: false, error: data });
+        }
+      });
+    });
+
+    req.on('error', reject);
+    req.write(payload_str);
+    req.end();
+  });
+}
+
+// Helper: Add contact to Notion
+async function addContactToNotion(apiKey, databaseId, contact) {
+  const payload = JSON.stringify({
+    parent: { database_id: databaseId },
+    properties: {
+      Name: {
+        title: [{ text: { content: contact.name } }],
+      },
+      Email: {
+        email: contact.email,
+      },
+      Company: {
+        rich_text: [{ text: { content: contact.company || 'N/A' } }],
+      },
+      Subject: {
+        rich_text: [{ text: { content: contact.subject } }],
+      },
+      Message: {
+        rich_text: [{ text: { content: contact.message } }],
+      },
+      Created: {
+        date: { start: new Date().toISOString() },
+      },
+      Status: {
+        select: { name: 'new' },
+      },
+    },
+  });
+
+  return new Promise((resolve, reject) => {
+    const options = {
+      hostname: 'api.notion.com',
+      path: '/v1/pages',
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'Notion-Version': '2022-06-28',
+        'Content-Length': Buffer.byteLength(payload),
+      },
+    };
+
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+      res.on('end', () => {
+        try {
+          const response = JSON.parse(data);
+          if (res.statusCode === 200) {
+            resolve({ success: true, id: response.id });
+          } else {
+            resolve({ success: false, error: response });
+          }
+        } catch (e) {
+          resolve({ success: false, error: data });
+        }
+      });
+    });
+
+    req.on('error', reject);
+    req.write(payload);
+    req.end();
+  });
+}
+
+// Helper: Create Linear task
+async function createLinearTask(apiKey, title, description, email) {
+  const escapedTitle = title.replace(/"/g, '\\"').replace(/\n/g, '\\n');
+  const escapedDescription = description.replace(/"/g, '\\"').replace(/\n/g, '\\n');
+
+  const query = `
+    mutation {
+      issueCreate(
+        input: {
+          teamId: "team-1"
+          title: "${escapedTitle}"
+          description: "${escapedDescription}\\n\\nContato: ${email}"
+          priority: 3
+        }
+      ) {
+        success
+        issue {
+          id
+          identifier
+        }
+      }
+    }
+  `;
+
+  const payload = JSON.stringify({ query });
+
+  return new Promise((resolve, reject) => {
+    const options = {
+      hostname: 'api.linear.app',
+      path: '/graphql',
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload),
+      },
+    };
+
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+      res.on('end', () => {
+        try {
+          const response = JSON.parse(data);
+          if (response.data?.issueCreate?.success) {
+            resolve({ success: true, id: response.data.issueCreate.issue.id });
+          } else {
+            resolve({ success: false, error: response.errors || response });
+          }
+        } catch (e) {
+          resolve({ success: false, error: data });
+        }
+      });
+    });
+
+    req.on('error', reject);
+    req.write(payload);
+    req.end();
+  });
 }
