@@ -76,7 +76,7 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         id: cloudfront
         run: |
-          echo "✅ CloudFront invalidation skipped for now"
+          aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
 
       # 10. Deploy Lambda (if function exists)
       - name: Deploy Lambda Function
