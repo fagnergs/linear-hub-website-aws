@@ -18,34 +18,34 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    
+
     steps:
       # 1. Checkout code
       - name: Checkout Repository
         uses: actions/checkout@v4
-      
+
       # 2. Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-      
+
       # 3. Install dependencies
       - name: Install Dependencies
         run: npm ci
-      
+
       # 4. Lint code
       - name: Run Linter
         run: npm run lint --max-warnings 10
         continue-on-error: true
-      
+
       # 5. Build static site
       - name: Build Next.js
         run: npm run build
         env:
           NODE_ENV: production
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-      
+
       # 6. Verify build output
       - name: Verify Build Output
         run: |
@@ -56,7 +56,7 @@ jobs:
           echo "✅ Build successful"
           echo "Build contents:"
           find out -type f -name "*.html" -o -name "*.js" -o -name "*.css" | head -20
-      
+
       # 7. Configure AWS credentials
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -64,20 +64,20 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
-      
+
       # 8. Deploy to S3 (only on main push)
       - name: Deploy to S3
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           echo "Syncing build to S3: ${{ secrets.S3_BUCKET }}"
-          
+
           # Sync all files from out/ directory (Next.js export output)
           aws s3 sync out/ s3://${{ secrets.S3_BUCKET }}/ \
             --delete \
             --cache-control "max-age=31536000,immutable" \
             --exclude "*.html" \
             --region ${{ env.AWS_REGION }}
-          
+
           # Upload HTML files separately with shorter cache (5 minutes)
           find out -name "*.html" -type f | while read file; do
             s3_path="${file#out/}"
@@ -87,7 +87,7 @@ jobs:
               --region ${{ env.AWS_REGION }}
           done
           echo "✅ S3 upload complete"
-      
+
       # 9. Invalidate CloudFront cache
       - name: Invalidate CloudFront
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -97,17 +97,17 @@ jobs:
             echo "⚠️  CLOUDFRONT_DISTRIBUTION_ID not set, skipping invalidation"
             exit 0
           fi
-          
+
           echo "Invalidating CloudFront distribution: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}"
           INVALIDATION_ID=$(aws cloudfront create-invalidation \
             --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
             --paths "/*" \
             --query 'Invalidation.Id' \
             --output text)
-          
+
           echo "Invalidation created: $INVALIDATION_ID"
           echo "Check status at: https://console.aws.amazon.com/cloudfront/v3"
-      
+
       # 9b. Send Slack notification - Deploy succeeded
       - name: Send Slack Notification - Success
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && success()
@@ -222,7 +222,7 @@ jobs:
                 }
               ]
             }
-      
+
       # 10. Deploy Lambda (if function exists)
       - name: Deploy Lambda Function
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -231,28 +231,28 @@ jobs:
             echo "⚠️  LAMBDA_FUNCTION_NAME not set, skipping Lambda deployment"
             exit 0
           fi
-          
+
           echo "Deploying Lambda function: ${{ secrets.LAMBDA_FUNCTION_NAME }}"
-          
+
           # Create deployment package from aws/lambda directory
           cd aws/lambda
           zip -r function.zip index.js package.json
-          
+
           # Update Lambda code only (avoid ResourceConflictException)
           aws lambda update-function-code \
             --function-name ${{ secrets.LAMBDA_FUNCTION_NAME }} \
             --zip-file fileb://function.zip \
             --region ${{ env.AWS_REGION }}
-          
+
           echo "✅ Lambda deployment complete"
-      
+
       # 11. Run tests
       - name: Run Tests
         if: github.event_name == 'pull_request'
         run: |
           echo "✅ Build tests passed"
           echo "⚠️  Add automated tests in future"
-      
+
       # 12. Notify on completion
       - name: Deployment Summary
         if: always()
