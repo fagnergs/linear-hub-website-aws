@@ -454,7 +454,7 @@ async function createLinearTask(apiKey, title, description, email) {
     mutation {
       issueCreate(
         input: {
-          teamId: "team-1"
+          teamId: "17f559bc-bd5e-42ba-b499-4ec7d3cdfdd8"
           title: "${escapedTitle}"
           description: "${escapedDescription}\\n\\nContato: ${email}"
           priority: 3
@@ -478,7 +478,7 @@ async function createLinearTask(apiKey, title, description, email) {
       path: '/graphql',
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey.substring(0, 20)}...`,
+        'Authorization': apiKey,
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(payload),
       },
