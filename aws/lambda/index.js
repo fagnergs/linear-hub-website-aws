@@ -410,7 +410,7 @@ async function addContactToNotion(apiKey, databaseId, contact) {
       path: '/v1/pages',
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey.substring(0, 20)}...`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
         'Notion-Version': '2022-06-28',
         'Content-Length': Buffer.byteLength(payload),
