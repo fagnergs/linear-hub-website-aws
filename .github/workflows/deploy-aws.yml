@@ -235,8 +235,8 @@ jobs:
           
           echo "Deploying Lambda function: ${{ secrets.LAMBDA_FUNCTION_NAME }}"
           
-          # Create deployment package
-          cd aws/lambda/contact-api
+          # Create deployment package from aws/lambda directory
+          cd aws/lambda
           zip -r function.zip index.js package.json
           
           # Update Lambda code only (avoid ResourceConflictException)
