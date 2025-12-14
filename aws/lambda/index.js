@@ -166,15 +166,20 @@ exports.handler = async (event) => {
     try {
       const notionApiKey = process.env.NOTION_API_KEY;
       const notionDatabaseId = process.env.NOTION_CONTACTS_DATABASE_ID;
+      console.log('=== NOTION INTEGRATION CHECK ===');
+      console.log('NOTION_API_KEY exists:', !!notionApiKey);
+      console.log('NOTION_CONTACTS_DATABASE_ID exists:', !!notionDatabaseId);
+      console.log('NOTION_CONTACTS_DATABASE_ID value:', notionDatabaseId);
+      
       if (notionApiKey && notionDatabaseId) {
-        console.log('Notion: API key found, database ID found');
+        console.log('Notion: Starting integration...');
         const notionResult = await addContactToNotion(notionApiKey, notionDatabaseId, { name, email, company, subject, message });
-        console.log('Notion: Result:', notionResult);
+        console.log('Notion: Integration result:', notionResult);
       } else {
         console.warn('Notion: Missing credentials - API key:', !!notionApiKey, 'DB ID:', !!notionDatabaseId);
       }
     } catch (error) {
-      console.error('Notion logging failed (non-blocking):', error);
+      console.error('Notion integration error (non-blocking):', error);
     }
 
     // Create Linear task (non-blocking)
@@ -376,6 +381,9 @@ async function sendSlackNotification(webhookUrl, contact) {
 // Helper: Add contact to Notion
 async function addContactToNotion(apiKey, databaseId, contact) {
   console.log('Notion: Starting addContactToNotion...');
+  console.log('Notion: Database ID:', databaseId);
+  console.log('Notion: API Key length:', apiKey ? apiKey.length : 'null');
+  
   const payload = JSON.stringify({
     parent: { database_id: databaseId },
     properties: {
@@ -403,6 +411,8 @@ async function addContactToNotion(apiKey, databaseId, contact) {
     },
   });
 
+  console.log('Notion: Payload prepared, length:', payload.length);
+
   return new Promise((resolve, reject) => {
     console.log('Notion: Creating request to api.notion.com...');
     const options = {
@@ -424,21 +434,30 @@ async function addContactToNotion(apiKey, databaseId, contact) {
         data += chunk;
       });
       res.on('end', () => {
-        console.log('Notion: Response data:', data.substring(0, 200));
+        console.log('Notion: Response data:', data.substring(0, 300));
         try {
           const response = JSON.parse(data);
           if (res.statusCode === 200) {
+            console.log('Notion: ✅ Success! Page ID:', response.id);
             resolve({ success: true, id: response.id });
           } else {
-            resolve({ success: false, error: response });
+            console.error('Notion: ❌ Error status', res.statusCode);
+            console.error('Notion: Error response:', response);
+            resolve({ success: false, error: response, status: res.statusCode });
           }
         } catch (e) {
-          resolve({ success: false, error: data });
+          console.error('Notion: JSON Parse error:', e.message);
+          console.error('Notion: Raw response:', data);
+          resolve({ success: false, error: 'Parse error', rawData: data });
         }
       });
     });
 
-    req.on('error', reject);
+    req.on('error', (err) => {
+      console.error('Notion: Request error:', err.message);
+      reject(err);
+    });
+    
     req.write(payload);
     req.end();
   });
