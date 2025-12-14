@@ -14,6 +14,7 @@ export default function Contact() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    company: '',
     subject: '',
     message: '',
   });
@@ -54,7 +55,7 @@ export default function Contact() {
         const data = await response.json();
         console.log('Sucesso:', data);
         setSubmitStatus('success');
-        setFormData({ name: '', email: '', subject: '', message: '' });
+        setFormData({ name: '', email: '', company: '', subject: '', message: '' });
         setTimeout(() => setSubmitStatus('idle'), 5000);
       } else {
         try {
@@ -129,6 +130,15 @@ export default function Contact() {
                 className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
+
+            <input
+              type="text"
+              name="company"
+              placeholder="Empresa (opcional)"
+              value={formData.company}
+              onChange={handleChange}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            />
 
             <input
               type="text"
