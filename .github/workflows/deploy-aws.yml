@@ -73,7 +73,7 @@ jobs:
 
       # 9. Invalidate CloudFront cache
       - name: Invalidate CloudFront
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.CLOUDFRONT_DISTRIBUTION_ID != ''
         id: cloudfront
         run: |
           aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
