@@ -152,7 +152,11 @@ exports.handler = async (event) => {
     try {
       const slackWebhookUrl = process.env.SLACK_WEBHOOK_URL;
       if (slackWebhookUrl) {
-        await sendSlackNotification(slackWebhookUrl, { name, email, company, subject, message });
+        console.log('Slack webhook URL found, sending notification...');
+        const slackResult = await sendSlackNotification(slackWebhookUrl, { name, email, company, subject, message });
+        console.log('Slack notification result:', slackResult);
+      } else {
+        console.warn('Slack webhook URL not configured');
       }
     } catch (error) {
       console.error('Slack notification failed (non-blocking):', error);
@@ -319,6 +323,10 @@ async function sendSlackNotification(webhookUrl, contact) {
     const payload_str = JSON.stringify(payload);
     const url = new URL(webhookUrl);
 
+    console.log('Slack: Preparing webhook request...');
+    console.log('Slack: URL hostname:', url.hostname);
+    console.log('Slack: URL path:', url.pathname);
+
     const options = {
       hostname: url.hostname,
       path: url.pathname + url.search,
@@ -330,20 +338,28 @@ async function sendSlackNotification(webhookUrl, contact) {
     };
 
     const req = https.request(options, (res) => {
+      console.log('Slack: Response received, status:', res.statusCode);
       let data = '';
       res.on('data', (chunk) => {
         data += chunk;
       });
       res.on('end', () => {
+        console.log('Slack: Response data:', data);
         if (res.statusCode === 200) {
+          console.log('Slack: ✅ Notification sent successfully');
           resolve({ success: true });
         } else {
+          console.error('Slack: ❌ Error response:', data);
           resolve({ success: false, error: data });
         }
       });
     });
 
-    req.on('error', reject);
+    req.on('error', (err) => {
+      console.error('Slack: Request error:', err);
+      reject(err);
+    });
+    
     req.write(payload_str);
     req.end();
   });
