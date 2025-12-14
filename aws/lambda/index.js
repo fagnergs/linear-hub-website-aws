@@ -415,6 +415,9 @@ async function addContactToNotion(apiKey, databaseId, contact) {
 
   return new Promise((resolve, reject) => {
     console.log('Notion: Creating request to api.notion.com...');
+    console.log('Notion: API Key first 20 chars:', apiKey.substring(0, 20));
+    console.log('Notion: API Key last 10 chars:', apiKey.substring(apiKey.length - 10));
+    console.log('Notion: Full Authorization header:', `Bearer ${apiKey}`);
     const options = {
       hostname: 'api.notion.com',
       path: '/v1/pages',
