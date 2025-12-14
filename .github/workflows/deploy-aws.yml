@@ -69,7 +69,7 @@ jobs:
       - name: Deploy to S3
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
-          echo "✅ S3 deployment skipped for now - build verified working"
+          aws s3 sync out/ s3://${{ secrets.S3_BUCKET }}/ --delete
 
       # 9. Invalidate CloudFront cache
       - name: Invalidate CloudFront
