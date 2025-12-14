@@ -37,7 +37,7 @@ jobs:
       
       # 4. Lint code
       - name: Run Linter
-        run: npm run lint
+        run: npm run lint --max-warnings 10
         continue-on-error: true
       
       # 5. Build static site
