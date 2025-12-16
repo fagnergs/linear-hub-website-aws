@@ -10,7 +10,9 @@ Three-layer cost control strategy configured for Linear Hub Website production e
 
 1. **Budget Notifications** - Hard limit with 3-tier alerts (50%, 80%, 100%)
 2. **Cost Anomaly Detection** - Automated spike detection with daily notifications
-3. **Email Subscriptions** - Direct email alerts to Fagner (fagner.gois@gmail.com)
+3. **Email Subscriptions** - Direct email alerts to:
+   - fagnergs@gmail.com (personal account)
+   - fagner.silva@linear-hub.com.br (business account)
 
 ---
 
@@ -29,11 +31,11 @@ Renewal:            Auto-renews on 1st of each month
 
 ### Budget Notifications
 
-| Threshold | Trigger | Email Recipient | Purpose |
+| Threshold | Trigger | Email Recipients | Purpose |
 |-----------|---------|-----------------|---------|
-| **50%** | $3.00 spent | fagner.gois@gmail.com | Early warning |
-| **80%** | $4.80 spent | fagner.gois@gmail.com | Escalation alert |
-| **100%** | $6.00 spent | fagner.gois@gmail.com | Critical limit reached |
+| **50%** | $3.00 spent | fagnergs@gmail.com<br/>fagner.silva@linear-hub.com.br | Early warning |
+| **80%** | $4.80 spent | fagnergs@gmail.com<br/>fagner.silva@linear-hub.com.br | Escalation alert |
+| **100%** | $6.00 spent | fagnergs@gmail.com<br/>fagner.silva@linear-hub.com.br | Critical limit reached |
 
 ### What to Expect
 - 1st alert: When spending reaches **$3.00** (halfway through month)
@@ -59,18 +61,21 @@ Detection Method:   Machine learning based
 
 ### Anomaly Subscription Setup
 ```
-Subscription Name:  linear-hub-website-anomaly-alerts
+Subscription Name:  Default-Services-Subscription
 Detection Threshold: 20% deviation from baseline
 Check Frequency:    DAILY
 Notification Type:  EMAIL
-Recipient:          fagner.gois@gmail.com
+Recipients:         fagnergs@gmail.com
+                    fagner.silva@linear-hub.com.br
 ```
 
 ### How It Works
 1. System learns historical spending patterns for the past 14 days
 2. Each day, AWS compares actual spend vs. historical baseline
 3. If spend deviates **>20%** from normal pattern → anomaly detected
-4. Daily email sent to fagner.gois@gmail.com with anomaly details
+4. Daily email sent to both recipients:
+   - fagnergs@gmail.com
+   - fagner.silva@linear-hub.com.br
 
 ### Example Scenarios
 | Scenario | Daily Baseline | Actual Spend | Deviation | Alert Triggered? |
@@ -90,9 +95,11 @@ Budget Threshold Exceeded
     ↓
 AWS Budgets Service
     ↓
-Email to fagner.gois@gmail.com
+Emails to:
+  - fagnergs@gmail.com
+  - fagner.silva@linear-hub.com.br
     ↓
-You Receive Alert
+Both Receive Alert
 
 ---
 
@@ -100,17 +107,42 @@ Anomaly Detected
     ↓
 Cost Anomaly Detection
     ↓
-Email to fagner.gois@gmail.com
+Emails to:
+  - fagnergs@gmail.com
+  - fagner.silva@linear-hub.com.br
     ↓
-You Receive Alert
+Both Receive Alert
+
+---
+
+CloudWatch Alarm Triggered
+    ↓
+SNS Topic (linear-hub-website-alerts)
+    ↓
+Emails to:
+  - fagnergs@gmail.com
+  - fagner.silva@linear-hub.com.br
+    ↓
+Both Receive Alert
 ```
 
 ### Confirming Email Subscriptions
-Check your email inbox for:
-- **AWS Notifications** from budgets-notifications@aws.amazon.com (Budget setup)
-- **AWS Cost Anomaly** notifications (Anomaly detection setup)
+
+**Check both email inboxes for confirmation emails:**
+
+For **fagnergs@gmail.com**:
+- AWS Budget notifications confirmation
+- AWS Cost Anomaly confirmation
+- SNS subscription confirmation (CloudWatch Alarms)
+
+For **fagner.silva@linear-hub.com.br**:
+- AWS Budget notifications confirmation
+- AWS Cost Anomaly confirmation  
+- SNS subscription confirmation (CloudWatch Alarms)
 
 Click **"Confirm Subscription"** in each email to activate notifications.
+
+**⚠️ IMPORTANT**: Both email addresses must confirm subscriptions for alerts to be delivered.
 
 ---
 
