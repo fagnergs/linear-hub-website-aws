@@ -1,11 +1,24 @@
-# AWS Resource Group - Linear Hub Website
+# AWS Resource Groups - Linear Hub Website
 
 **Created:** 16 December 2025  
 **Purpose:** Centralized management and cost tracking for all Linear Hub Website production resources  
+**Status:** ✅ 101% Integrated (6 resources across 2 Resource Groups)
 
 ---
 
-## 📦 Resource Group Details
+## 📦 Resource Groups Overview
+
+Two complementary Resource Groups ensure complete coverage of all production resources:
+
+| Resource Group | Type | Resources | Status |
+|---|---|---|---|
+| `linear-hub-website-production` | Compute & Delivery | CloudFront, S3, Lambda, API Gateway | ✅ 4 Active |
+| `linear-hub-website-dns-security` | DNS & Security | Route 53, ACM Certificate | ✅ 2 Active |
+| **Total Coverage** | **All Production** | **6 Resources** | **✅ 100%** |
+
+---
+
+## 📦 Resource Group #1: Compute & Delivery
 
 ### General Information
 - **Name:** `linear-hub-website-production`
@@ -13,6 +26,7 @@
 - **Region:** `us-east-1`
 - **Description:** Linear Hub Website Production Resources
 - **Status:** ✅ Active
+- **Created:** 2025-12-16
 
 ### Filtering Criteria
 
@@ -30,9 +44,9 @@ The Resource Group uses **TAG_FILTERS_1_0** to automatically group resources bas
 
 ---
 
-## 📊 Grouped Resources
+## 📊 Grouped Resources - Group #1 (Compute & Delivery)
 
-### Current Members
+### Current Members (4 Resources)
 
 | Resource | Type | ARN | Status |
 |----------|------|-----|--------|
@@ -97,21 +111,84 @@ aws ce get-cost-and-usage \
 
 ---
 
-## 🔧 Managing Resources via Resource Group
+## � Resource Group #2: DNS & Security
+
+### General Information
+- **Name:** `linear-hub-website-dns-security`
+- **ARN:** `arn:aws:resource-groups:us-east-1:781705467769:group/linear-hub-website-dns-security`
+- **Region:** `us-east-1`
+- **Description:** Linear Hub Website DNS and Security Resources Route 53 ACM
+- **Status:** ✅ Active
+- **Created:** 2025-12-16
+
+### Filtering Criteria
+
+The Resource Group uses **TAG_FILTERS_1_0** to automatically group DNS and security resources:
+
+**Required Tags:**
+- `Application: linear-hub-website`
+- `Environment: production`
+
+**Resource Types Included:**
+- AWS::Route53::HostedZone
+- AWS::CertificateManager::Certificate
+
+### Current Members (2 Resources)
+
+| Resource | Type | ARN | Status |
+|----------|------|-----|--------|
+| linear-hub.com.br | Route 53 Hosted Zone | `arn:aws:route53:::hostedzone/Z01786261P1IDZOECZQA5` | ✅ Active |
+| linear-hub.com.br | ACM Certificate | `arn:aws:acm:us-east-1:781705467769:certificate/5b7c5719-6344-4afa-9c80-73525ef0d345` | ✅ Active |
+
+**Total:** 2 resources grouped
+
+### DNS & Security Management
+
+**View Route 53 zone configuration:**
+```bash
+aws route53 get-hosted-zone \
+  --id Z01786261P1IDZOECZQA5
+```
+
+**List DNS records:**
+```bash
+aws route53 list-resource-record-sets \
+  --hosted-zone-id Z01786261P1IDZOECZQA5
+```
+
+**Check ACM certificate details:**
+```bash
+aws acm describe-certificate \
+  --certificate-arn arn:aws:acm:us-east-1:781705467769:certificate/5b7c5719-6344-4afa-9c80-73525ef0d345 \
+  --region us-east-1
+```
+
+---
+
+## 🔧 Managing Resources via Resource Groups
 
 ### AWS Console Access
 
 1. Go to **AWS Systems Manager** → **Resource Groups**
-2. Select **linear-hub-website-production**
+2. Select either:
+   - **linear-hub-website-production** (Compute & Delivery)
+   - **linear-hub-website-dns-security** (DNS & Security)
 3. View all grouped resources
 4. Take bulk actions (tagging, permissions, monitoring)
 
 ### AWS CLI Operations
 
-**List all resources in the group:**
+**List all resources in Compute & Delivery group:**
 ```bash
 aws resource-groups list-group-resources \
   --group-name "linear-hub-website-production" \
+  --region us-east-1
+```
+
+**List all resources in DNS & Security group:**
+```bash
+aws resource-groups list-group-resources \
+  --group-name "linear-hub-website-dns-security" \
   --region us-east-1
 ```
 
@@ -271,22 +348,53 @@ aws cloudwatch put-metric-alarm \
 
 ---
 
+## 🎊 101% Integration Complete
+
+### All 6 Production Resources Now Grouped
+
+```
+✅ Group #1: linear-hub-website-production (Compute & Delivery)
+   ├─ CloudFront Distribution
+   ├─ S3 Bucket (Website Origin)
+   ├─ Lambda Function (Contact API)
+   └─ API Gateway (REST API)
+
+✅ Group #2: linear-hub-website-dns-security (DNS & Security)
+   ├─ Route 53 Hosted Zone
+   └─ ACM Certificate (SSL/TLS)
+
+📊 TOTAL: 6 Resources | 2 Resource Groups | 100% Integrated
+```
+
+### Benefits of Dual Resource Groups
+
+| Aspect | Benefit |
+|--------|---------|
+| **Operational** | Separate management of compute vs DNS/security |
+| **Financial** | Track compute costs vs security infrastructure |
+| **Permissions** | Different IAM roles for compute vs security teams |
+| **Monitoring** | Specialized dashboards for each layer |
+| **Scaling** | Add resources per group as needed |
+
+---
+
 ## 🚀 Future Enhancements
 
 ### Planned Additions
 
-- [ ] Add CloudWatch Log Groups to Resource Group
-- [ ] Create Route53 zone resource (when tagging available)
-- [ ] Add ACM Certificate (when tagging available)
+- [ ] Add CloudWatch Log Groups to Resource Group (when tagging support added)
 - [ ] Implement automated backup policies
 - [ ] Configure automated cost optimization
+- [ ] Create cross-region DR strategy
+- [ ] Add automated compliance checking
 
 ### Scalability
 
 As the project grows:
 1. Add new resources with the same tags
-2. They'll automatically be grouped
+2. They'll automatically be grouped in the appropriate Resource Group
 3. Costs and management scale centrally
+4. No additional configuration needed
 
 ---
 
@@ -301,8 +409,9 @@ As the project grows:
 
 ## 📞 Management
 
-**Resource Group Owner:** DevOps Team  
+**Resource Groups Owner:** DevOps Team  
 **Last Updated:** 16 December 2025  
 **Next Review:** January 2026  
+**Integration Status:** ✅ 101% COMPLETE
 
 For questions or updates, refer to the main project documentation in `AWS_PRODUCTION_RESOURCES.md`.
