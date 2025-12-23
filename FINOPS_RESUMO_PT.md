@@ -1,5 +1,7 @@
 # 📊 FINOPS LINEAR HUB - RESUMO EXECUTIVO
 
+> ⚠️ **Nota Importante:** Valores de November 2025 documentados. Para dados atualizados de Dezembro, veja [CUSTOS_DEZEMBRO_2025.md](CUSTOS_DEZEMBRO_2025.md)
+
 ## 🎯 Objetivo Alcançado
 
 Implementação completa de um sistema AWS FinOps para **Linear Hub Website** que envia **alertas diários de custo** para acompanhar gastos contra limites de orçamento.
@@ -9,10 +11,11 @@ Implementação completa de um sistema AWS FinOps para **Linear Hub Website** qu
 ## ✅ O Que Foi Concluído
 
 ### 1. Descoberta e Análise de Custos ✅
-- **Custos reais identificados:** $12.12/mês
+- **Custos reais identificados (Nov/2025):** $12.12/mês
 - **Custos de Produção:** $5.35/mês (CloudFront $2.10, Lambda $2.00, API Gateway $0.75, Outros $0.50)
 - **Custos de Desenvolvimento:** $6.77/mês (RDS $3.34, EC2 $0.50, Transferência de Dados $2.93)
 - **Conformidade de tags:** 100% (6/6 recursos tagueados)
+- **Status:** Monitoramento em tempo real ativo 24/7 com alertas diários
 
 ### 2. Configuração de Orçamentos ✅
 - **Orçamento de Produção:** $3.00/mês (6 recursos filtrados por tag)
