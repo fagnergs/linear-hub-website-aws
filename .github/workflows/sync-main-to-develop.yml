@@ -1,0 +1,84 @@
+name: Sync main to develop
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+      pull-requests: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+      
+      - name: Check if develop branch exists
+        id: check_develop
+        run: |
+          if git rev-parse --verify origin/develop 2>/dev/null; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Create develop branch if it doesn't exist
+        if: steps.check_develop.outputs.exists == 'false'
+        run: |
+          git checkout -b develop
+          git push origin develop
+          echo "✅ Created develop branch"
+      
+      - name: Fetch all branches
+        run: git fetch origin
+      
+      - name: Checkout develop
+        run: git checkout develop
+      
+      - name: Merge main into develop
+        run: |
+          git merge origin/main --allow-unrelated-histories -m "sync: merge main into develop [skip ci]"
+      
+      - name: Push changes
+        run: |
+          git push origin develop
+      
+      - name: Check for conflicts
+        id: check_conflicts
+        run: |
+          if git status | grep -q "both modified"; then
+            echo "has_conflicts=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_conflicts=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Report success
+        if: steps.check_conflicts.outputs.has_conflicts == 'false'
+        run: |
+          echo "✅ Successfully synced main to develop"
+          echo ""
+          echo "📊 Sync Summary:"
+          echo "  Branch: develop"
+          echo "  Source: main"
+          echo "  Status: ✅ Success"
+          echo "  Time: $(date '+%d/%m/%Y %H:%M:%S')"
+      
+      - name: Report conflicts
+        if: steps.check_conflicts.outputs.has_conflicts == 'true'
+        run: |
+          echo "⚠️  Merge conflicts detected!"
+          echo ""
+          echo "Please resolve conflicts manually and push to develop"
+          exit 1
