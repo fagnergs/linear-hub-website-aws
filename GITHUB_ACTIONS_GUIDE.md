@@ -17,19 +17,18 @@ Função:
 Status: ✅ Ativo
 ```
 
-### 2. **sync-secrets-to-lambda** (CORRIGIDO)
+### 2. **sync-secrets-to-lambda** (REMOVIDO - 24/12/2025) ❌
 ```yaml
 Triggers:
-  - Daily cron: 2:00 AM UTC
-  - workflow_dispatch (manual)
+  - Daily cron: 2:00 AM UTC (REMOVIDO)
+  - workflow_dispatch (REMOVIDO)
 
-Função:
-  - Sincroniza secrets do GitHub para Lambda
-  - Atualiza variáveis de ambiente da função
-  - Testa webhook do Slack
-  - Notifica sucesso
-
-Status: ✅ Ativo (erro corrigido)
+Status: ❌ REMOVIDO - Desnecessário
+Razão: 
+  - Site usa Next.js API Route (/api/contact.ts)
+  - Lambda não é utilizado para processamento de contatos
+  - Secrets já configuradas no next.config.js/.env
+  - Removido para eliminar erro de saída (exit code 3)
 ```
 
 ### 3. **deploy** (Existente)
@@ -60,14 +59,29 @@ Status: ✅ Ativo
 
 ---
 
-## 🔧 Correção Realizada
+## 🔧 Análise: sync-secrets-to-lambda REMOVIDO
 
-### Problema
+### Problema Original
 **Workflow:** sync-secrets-to-lambda  
 **Erro:** Exit code 3  
 **Causa:** Teste Slack aguardava string "ok", mas curl retorna HTTP status codes
 
-### Solução Implementada
+### Decisão: Remover ao invés de Corrigir
+**Por que?**
+- Lambda `linear-hub-contact-api` não é utilizado pelo site
+- Site usa Next.js API Route (`/api/contact.ts`) para formulário de contato
+- Secrets já estão configurados no `.env` (não precisam sincronizar com Lambda)
+- Remover o workflow elimina o erro SEM impacto operacional
+
+### Status
+✅ **Removido em 24 de dezembro de 2025**  
+✅ **Sem impacto no site** (não era usado)
+
+---
+
+## 🔧 Correção Anterior (Documentado para Referência)
+
+Se fosse necessário manter o workflow, a solução seria:
 ```diff
 - RESPONSE=$(curl -s -X POST ...)
 - if [ "$RESPONSE" = "ok" ]; then
@@ -76,12 +90,6 @@ Status: ✅ Ativo
 + HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
 + if [ "$HTTP_CODE" = "200" ]; then
 ```
-
-**Melhorias:**
-- ✅ Extrair corretamente o código HTTP do curl
-- ✅ Adicionar `continue-on-error: true` para não bloquear pipeline
-- ✅ Verificar se SLACK_WEBHOOK_URL está configurado
-- ✅ Melhor logging e tratamento de erros
 
 ---
 
