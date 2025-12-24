@@ -1,0 +1,119 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'FinOps Automation - Lambda + EventBridge para Extração de Custos'
+
+Parameters:
+  SNSTopicArn:
+    Type: String
+    Default: 'arn:aws:sns:us-east-1:781705467769:linear-hub-website-alerts'
+    Description: ARN do tópico SNS para alertas de custos
+  
+  LambdaExecutionRole:
+    Type: String
+    Default: 'arn:aws:iam::781705467769:role/linear-hub-lambda-execution'
+    Description: ARN da IAM Role para execução da Lambda
+
+Resources:
+  # Lambda Function para FinOps
+  FinOpsLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: linear-hub-finops-cost-extractor
+      Runtime: python3.11
+      Handler: lambda_finops_executor.lambda_handler
+      Role: !Ref LambdaExecutionRole
+      Timeout: 300
+      MemorySize: 512
+      Environment:
+        Variables:
+          SNS_TOPIC_ARN: !Ref SNSTopicArn
+          AWS_REGION: us-east-1
+      Code:
+        ZipFile: |
+          # Será substituído pelo código do lambda_finops_executor.py
+          def lambda_handler(event, context):
+              return {'statusCode': 200}
+      Tags:
+        - Key: Project
+          Value: linear-hub
+        - Key: Environment
+          Value: production
+
+  # EventBridge Rule - 9h da manhã (UTC)
+  FinOpsDailyRule09:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: linear-hub-finops-09h-utc
+      Description: Executa extração de custos FinOps às 9h UTC
+      ScheduleExpression: 'cron(0 9 * * ? *)'
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt FinOpsLambdaFunction.Arn
+          Id: FinOpsLambdaTarget09
+          RoleArn: !Ref LambdaExecutionRole
+          Input: |
+            {
+              "mode": "current",
+              "send_email": true
+            }
+
+  # EventBridge Rule - 12h (UTC)
+  FinOpsDailyRule12:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: linear-hub-finops-12h-utc
+      Description: Executa extração de custos FinOps às 12h UTC
+      ScheduleExpression: 'cron(0 12 * * ? *)'
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt FinOpsLambdaFunction.Arn
+          Id: FinOpsLambdaTarget12
+          RoleArn: !Ref LambdaExecutionRole
+          Input: |
+            {
+              "mode": "current",
+              "send_email": true
+            }
+
+  # EventBridge Rule - 18h (UTC)
+  FinOpsDailyRule18:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: linear-hub-finops-18h-utc
+      Description: Executa extração de custos FinOps às 18h UTC
+      ScheduleExpression: 'cron(0 18 * * ? *)'
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt FinOpsLambdaFunction.Arn
+          Id: FinOpsLambdaTarget18
+          RoleArn: !Ref LambdaExecutionRole
+          Input: |
+            {
+              "mode": "current",
+              "send_email": true
+            }
+
+  # Permissão para EventBridge invocar Lambda
+  LambdaEventBridgePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref FinOpsLambdaFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt FinOpsDailyRule09.Arn
+
+Outputs:
+  LambdaFunctionArn:
+    Description: ARN da Lambda Function FinOps
+    Value: !GetAtt FinOpsLambdaFunction.Arn
+    Export:
+      Name: FinOpsLambdaArn
+
+  LambdaFunctionName:
+    Description: Nome da Lambda Function
+    Value: !Ref FinOpsLambdaFunction
+    Export:
+      Name: FinOpsLambdaName
+
+  EventBridgeRules:
+    Description: EventBridge Rules para agendamento
+    Value: 'linear-hub-finops-09h-utc, linear-hub-finops-12h-utc, linear-hub-finops-18h-utc'
